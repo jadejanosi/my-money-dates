@@ -1,0 +1,852 @@
+<title>ALMANAC Money Dates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;800&family=Nunito+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+<style>
+/* Layout: one centered column on a night-sky ground. Form, then the year: timeline first, then themes, windows, months, retrogrades and eclipses. */
+:root{
+  --bg:#12102B; --bg2:#1B1840; --panel:#201C4A; --line:#3A3470;
+  --fg:#F4F1FF; --muted:#B7B0DA; --violet:#8B5CF6; --pink:#FF5C8A; --cyan:#4DE8E0; --amber:#FFD166; --coral:#FF8A5B;
+  --display:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --glyph:"Segoe UI Symbol","Apple Symbols","Noto Sans Symbols 2",serif;
+  --rainbow:linear-gradient(90deg,var(--coral),var(--pink),var(--cyan),var(--violet));
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.6;margin:0;padding-inline:16px;padding-block:0 64px;overflow-x:hidden}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding-block:20px 0}
+.mark{font-family:var(--display);font-weight:800;letter-spacing:.32em;font-size:14px}
+.mark span{color:var(--cyan)}
+.tag{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em}
+.hero{display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,7vw,64px);line-height:1.04;margin:0;text-wrap:balance;letter-spacing:-.02em}
+h1 em,.grad{font-style:normal;background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);font-size:18px;max-width:60ch;margin:0}
+h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,4vw,32px);line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;margin:0;text-wrap:balance}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+.panel{background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:18px;padding:22px;backdrop-filter:blur(6px)}
+.sec{display:flex;flex-direction:column;gap:16px}
+.sechead{display:flex;flex-direction:column;gap:6px}
+/* form */
+form.birth{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:start}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+label{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+input,select{font:inherit;color:var(--fg);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;box-sizing:border-box;min-width:0}
+input:disabled{opacity:.45}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#cityList{position:absolute;z-index:5;top:100%;left:0;right:0;margin:4px 0 0;padding:6px;list-style:none;background:var(--bg2);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.45);max-height:320px;overflow-y:auto}
+#cityList li{padding:9px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+#cityList li small{font-family:var(--mono);color:var(--muted);font-size:11px;white-space:nowrap}
+#cityList li[aria-selected="true"],#cityList li:hover{background:color-mix(in srgb,var(--violet) 30%,var(--bg2))}
+#cityList li.empty{cursor:default;color:var(--muted)}
+#cityList li.empty:hover{background:none}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;align-self:flex-start}
+.linkbtn:hover{color:var(--cyan)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);font-weight:600}
+.check input{width:18px;height:18px;accent-color:var(--pink)}
+.btn{font-family:var(--display);font-weight:800;font-size:16px;border:0;border-radius:999px;padding:14px 22px;cursor:pointer;color:#12102B;background:var(--rainbow);background-size:200% 100%;transition:background-position .4s,transform .15s}
+.btn:hover{background-position:100% 0}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.6;cursor:wait}
+.formfoot{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.note{font-size:13px;color:var(--muted)}
+.err{color:var(--pink);font-weight:700;font-size:14px}
+.example{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--amber);border:1px dashed var(--amber);border-radius:999px;padding:5px 12px;align-self:flex-start}
+/* result head */
+.big3{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.big3 b{color:var(--fg);font-weight:600}
+.big3 .g{font-family:var(--glyph)}
+.notime{border-left:3px solid var(--amber);padding:10px 14px;background:color-mix(in srgb,var(--amber) 8%,var(--panel));border-radius:0 10px 10px 0;font-size:14px;color:var(--muted)}
+/* milestone */
+.milestone{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;border:1px solid var(--amber);background:linear-gradient(120deg,color-mix(in srgb,var(--amber) 16%,var(--panel)),var(--panel))}
+.milestone .gl{font-family:var(--glyph);font-size:52px;line-height:1;color:var(--amber)}
+.milestone .when{font-family:var(--mono);font-size:13px;color:var(--amber)}
+@media (max-width:520px){.milestone{grid-template-columns:1fr}}
+/* timeline */
+.tlwrap{overflow-x:auto}
+#timeline{display:block;width:100%;min-width:640px;height:auto}
+#timeline text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:14px;height:10px;border-radius:3px;display:inline-block}
+/* birthday */
+.bday{display:flex;flex-direction:column;gap:8px;border:1px solid color-mix(in srgb,var(--pink) 55%,transparent);background:linear-gradient(120deg,color-mix(in srgb,var(--pink) 14%,var(--panel)),var(--panel))}
+.bday .when{font-family:var(--mono);font-size:13px;color:var(--pink)}
+/* themes */
+.themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.theme{display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:16px;background:var(--panel);border:1px solid var(--line);min-width:0}
+.theme .top{display:flex;gap:12px;align-items:center}
+.theme .gl{font-family:var(--glyph);font-size:30px;line-height:1;width:36px;text-align:center}
+.theme .dates{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.theme p{color:var(--muted)}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid currentColor;align-self:flex-start}
+.p-conj{color:var(--amber)} .p-harm{color:var(--cyan)} .p-hard{color:var(--pink)}
+/* windows */
+.wins{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.wincol{display:flex;flex-direction:column;gap:12px}
+.wincol ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.win{display:grid;grid-template-columns:96px 1fr;gap:12px;padding:14px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+.win .d{font-family:var(--mono);font-size:13px;font-weight:600;line-height:1.35;font-variant-numeric:tabular-nums}
+.win p{font-size:15px;color:var(--muted)}
+.go .win{border-left:3px solid var(--cyan)} .go .win .d{color:var(--cyan)}
+.low .win{border-left:3px solid var(--pink)} .low .win .d{color:var(--pink)}
+/* months */
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.month{display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:16px;background:var(--panel);border:1px solid var(--line);min-width:0}
+.month .mname{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.month p{font-size:15px;color:var(--muted)}
+.month .energy{font-size:14px;color:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);white-space:nowrap}
+.c-go{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 50%,transparent)}
+.c-low{color:var(--pink);border-color:color-mix(in srgb,var(--pink) 50%,transparent)}
+.c-rx{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,transparent)}
+.c-ecl{color:var(--violet);border-color:color-mix(in srgb,var(--violet) 70%,transparent)}
+.c-bday{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 60%,transparent)}
+/* rx + eclipses */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.list{display:flex;flex-direction:column;gap:12px}
+.item{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+.item .d{font-family:var(--mono);font-size:13px;font-weight:600}
+.item p{font-size:15px;color:var(--muted)}
+footer{color:var(--muted);font-size:13px;text-align:center;padding-top:8px}
+footer a{color:inherit}
+.loading{font-family:var(--mono);color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+/* money */
+.headline{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;border:1px solid var(--amber);background:linear-gradient(120deg,color-mix(in srgb,var(--amber) 14%,var(--panel)),var(--panel))}
+.headline .gl{font-family:var(--glyph);font-size:52px;line-height:1}
+@media (max-width:520px){.headline{grid-template-columns:1fr}}
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.act{display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:16px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--ac);min-width:0}
+.acthead{display:flex;gap:12px;align-items:center}
+.act .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--ac) 20%,transparent);color:var(--ac);font-weight:800;flex:0 0 auto}
+.act ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.act li{display:grid;grid-template-columns:92px 1fr;gap:10px;font-size:15px;color:var(--muted);padding:10px;border-radius:10px;background:var(--bg2)}
+.act li .d{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ac);font-variant-numeric:tabular-nums}
+.act .skip{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
+.list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.item{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+.item.shut{border-left:3px solid var(--pink)}
+.item .d{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)}
+.item p{font-size:15px;color:var(--muted)}
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.zone{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.zone .zl{display:flex;gap:12px;align-items:flex-start}
+.zone .gl{font-family:var(--glyph);font-size:30px;line-height:1;width:34px;text-align:center}
+.zone .d{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.zone p{color:var(--muted);font-size:15px}
+.mcard{display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.mcard .mtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mcard .rating{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:99px;border:1px solid currentColor}
+.r-strong .rating{color:var(--cyan)} .r-steady .rating{color:var(--amber)} .r-careful .rating{color:var(--pink)}
+.r-strong{border-color:color-mix(in srgb,var(--cyan) 45%,var(--line))}
+.mcard p{font-size:15px;color:var(--muted)} .mcard p b{color:var(--fg)}
+
+</style>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="top">
+    <div class="mark">ALMANAC<span>.</span></div>
+    <div class="tag" id="todayTag"></div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow" style="color:var(--amber)">ALMANAC · Money Dates</div>
+    <h1>Your money year, mapped to <em>the exact dates.</em></h1>
+    <p class="lede">Enter your birth details. Money Dates checks every day of your next 12 months against your birth chart and shows your best dates to ask for more, launch, sign, buy, and pay down debt, plus the dates to keep your wallet shut.</p>
+  </section>
+
+  <section class="panel">
+    <form class="birth" id="birthForm" novalidate>
+      <div class="field"><label for="fName">First name</label><input id="fName" autocomplete="given-name" placeholder="Maya"></div>
+      <div class="field"><label for="fDate">Birth date</label><input id="fDate" type="date"></div>
+      <div class="field"><label for="fTime">Birth time</label><input id="fTime" type="time"></div>
+      <div class="field"><label for="fCity">Birth city</label>
+        <div style="position:relative">
+          <input id="fCity" type="text" autocomplete="off" placeholder="Start typing, like Tulsa" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cityList">
+          <ul id="cityList" role="listbox" hidden></ul>
+        </div>
+        <button type="button" class="linkbtn" id="manualToggle">Enter coordinates instead</button>
+      </div>
+      <div class="field" id="otherLat" hidden><label for="fLat">Latitude</label><input id="fLat" type="number" step="0.01" placeholder="40.71"></div>
+      <div class="field" id="otherLon" hidden><label for="fLon">Longitude</label><input id="fLon" type="number" step="0.01" placeholder="-74.01"></div>
+      <div class="field" id="otherTz" hidden><label for="fTz">Time zone</label><select id="fTz"></select></div>
+      <div class="formfoot">
+        <label class="check"><input type="checkbox" id="fNoTime"> I don't know my birth time</label>
+        <button class="btn" type="submit" id="goBtn">Map my money dates</button>
+      </div>
+      <div class="formfoot"><span class="note">Your birth time makes it sharper. No time? You still get your full year.</span><span class="err" id="formErr" role="alert"></span></div>
+    </form>
+  </section>
+
+  <div id="results" class="wrap"><p class="loading">Loading the sky…</p></div>
+
+  <footer>ALMANAC Money Dates is for fun, planning, and self-reflection. It is not financial advice. Planet positions use real astronomical data. City data from <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0).</footer>
+</div>
+
+<script>
+/* ======================= DATA ======================= */
+const VS = "︎";
+const SIGNS = [
+  {n:"Aries",g:"♈"},{n:"Taurus",g:"♉"},{n:"Gemini",g:"♊"},{n:"Cancer",g:"♋"},{n:"Leo",g:"♌"},{n:"Virgo",g:"♍"},
+  {n:"Libra",g:"♎"},{n:"Scorpio",g:"♏"},{n:"Sagittarius",g:"♐"},{n:"Capricorn",g:"♑"},{n:"Aquarius",g:"♒"},{n:"Pisces",g:"♓"}
+];
+const GLYPH = {Sun:"☉",Moon:"☽",Mercury:"☿",Venus:"♀",Mars:"♂",Jupiter:"♃",Saturn:"♄",Uranus:"♅",Neptune:"♆",Pluto:"♇"};
+const PLANET_COLOR = {Jupiter:"var(--amber)",Saturn:"var(--muted)",Uranus:"var(--cyan)",Neptune:"var(--violet)",Pluto:"var(--pink)"};
+const POINT_NAME = {Sun:"Sun",Moon:"Moon",Venus:"Venus",Mars:"Mars",Rising:"Rising sign",Midheaven:"Midheaven"};
+const ASP = {0:{n:"conjunct",fam:"conj",tag:"Direct hit"},60:{n:"sextile",fam:"harm",tag:"Easy flow"},90:{n:"square",fam:"hard",tag:"Pressure"},120:{n:"trine",fam:"harm",tag:"Easy flow"},180:{n:"opposite",fam:"hard",tag:"Pressure"}};
+
+const HOUSE = ["","you, your look, and fresh starts","money and what you're worth","texts, ideas, and short trips","home and family","love, fun, and creativity","daily routines, work, and health habits","partners and close relationships","shared money, trust, and deep bonds","travel, learning, and big ideas","career and reputation","friends, groups, and future goals","rest, healing, and letting go"];
+const MONTH_TITLE = ["","Reinvention month","Money month","Talk-it-out month","Home month","Fun and romance month","Reset-your-routine month","Relationship month","Deep-trust month","Adventure month","Career month","Squad month","Rest month"];
+const MONTH_DO = ["",
+"Change your hair, your bio, or your whole plan.",
+"Raise your prices, start a savings habit, or ask for more.",
+"Send the text, pitch the idea, start the class.",
+"Fix up your space and call your family.",
+"Say yes to dates, hobbies, and anything that makes you laugh.",
+"Start the new routine. Small habits stick this month.",
+"Talk honestly with your person, or meet a new one.",
+"Clear a debt, have the deep talk, let go of a grudge.",
+"Book the trip or sign up for the course.",
+"Go for the role, the raise, or the big launch.",
+"Show up for your people and set one big goal.",
+"Sleep more, journal, and say no without guilt."];
+const RX_HOUSE = ["",
+"Your look and your plans. Wait on the big rebrand.",
+"Money. Double-check payments and skip big purchases.",
+"Texts, emails, and cars. Reread before you hit send.",
+"Home. Expect repairs, old family stuff, or moving delays.",
+"Love and fun. Exes text back. Think before you reply.",
+"Work and health. Back up your files and reconfirm appointments.",
+"Partners. Old relationship stuff comes back to get sorted.",
+"Shared money and taxes. Read the fine print twice.",
+"Travel. Confirm flights and leave extra time.",
+"Career. Hold off on signing new deals. Redo, don't launch.",
+"Friends and groups. Plans fall through and old friends reach out.",
+"Your mind. Rest and reflect. Old secrets may surface."];
+const YEAR_HOUSE = ["",
+"This is a you year. Put yourself first and start fresh.",
+"This is a money year. Build your income and know your worth.",
+"This is a learning and talking year. Your words open doors.",
+"This is a home year. Roots, family, and maybe a move.",
+"This is a joy year. Love, fun, and creative projects lead the way.",
+"This is a habits year. Your daily routine changes everything.",
+"This is a partnership year. Who you team up with matters most.",
+"This is a transformation year. Deep change, shared money, and trust.",
+"This is an adventure year. Travel, study, and bigger thinking.",
+"This is a career year. You're being seen, so step up.",
+"This is a community year. Your people lift you up.",
+"This is a quiet reset year. Rest now so next year can take off."];
+
+const TRANSIT = {
+ Jupiter:{
+  Sun:"Your confidence grows and people notice you. Doors open when you put yourself out there.",
+  Moon:"Home and family feel lucky. A move, a bigger space, or a happier home life is likely.",
+  Venus:"Love and money get easier. A great stretch to date, ask for more, or treat yourself.",
+  Mars:"Your energy and courage go way up. Big goals feel doable, so go after them.",
+  Rising:"A fresh-start glow. You look and feel more like yourself, and new chances find you.",
+  Midheaven:"Career luck. Promotions, new clients, or a public win are on the table."},
+ Saturn:{
+  Sun:"A serious, grown-up stretch. You get tested, and you come out stronger and clearer.",
+  Moon:"Feelings get heavy and home needs work. Build the steady life you actually want.",
+  Venus:"Love and money get real. Weak bonds crack and strong ones commit.",
+  Mars:"Slow progress that sticks. Push too hard and you hit walls. Steady wins.",
+  Rising:"You're rebuilding how you show up. Health, habits, and boundaries matter most.",
+  Midheaven:"Career pressure that leads to real results. Work hard now and get the credit later."},
+ Uranus:{
+  Sun:"Big surprises and sudden freedom. Parts of your life that felt stuck break open.",
+  Moon:"Home and feelings shake up. A sudden move or a family change is possible.",
+  Venus:"Love and money surprise you. Out-of-nowhere crushes, or a sudden change in what you want.",
+  Mars:"Restless energy. You want to break rules and try something wild.",
+  Rising:"You reinvent yourself. New look, new vibe, new direction.",
+  Midheaven:"Career plot twist. A sudden job change or a brand new path."},
+ Neptune:{
+  Sun:"A dreamy, foggy stretch. Big creativity and strong gut feelings, so double-check the facts.",
+  Moon:"Feelings run deep and soft. Rest more and protect your energy.",
+  Venus:"Romance feels like a movie. Enjoy it, and keep your eyes open.",
+  Mars:"Your drive gets quiet. Follow what inspires you, not what pressures you.",
+  Rising:"People see you as more magical, even when you feel unsure who you are.",
+  Midheaven:"Your calling gets clearer, even if the path to it feels foggy."},
+ Pluto:{
+  Sun:"A deep power shift. Old versions of you fall away so a stronger one can show up.",
+  Moon:"Deep emotional change. Old family stuff comes up so you can finally let it go.",
+  Venus:"Intense changes in love and money. What you value transforms.",
+  Mars:"Huge willpower. You can push through almost anything right now.",
+  Rising:"A full glow-up from the inside out. People notice the change.",
+  Midheaven:"Career power moves. You step into more control and influence."}
+};
+const FAM_LINE = {
+  conj:"This one is a direct hit, so you'll feel it personally.",
+  harm:"This one flows easily. Use it on purpose.",
+  hard:"This one brings pressure, and the pressure is how you grow."
+};
+const GO_WHY = {
+  Jupiter:"Luck is on your side. Ask big.",
+  Venus:"Your charm is turned up. Great for dates, pitches, and photos.",
+  Sun:"You're in the spotlight. Get seen.",
+  Mars:"Energy spike. Start the hard thing."
+};
+const LOW_WHY = {
+  Saturn:"Heavy stretch. Do the boring work and skip big promises.",
+  Mars:"Short fuses all around. Pick your battles.",
+  Pluto:"Power struggles. Don't sign anything under pressure.",
+  Uranus:"Expect the unexpected. Keep plans loose.",
+  Neptune:"Foggy thinking. Double-check everything.",
+  Mercury:"Mercury retrograde. Redo, don't start.",
+  Eclipse:"Eclipse week. Plot twists happen. Hold off on big moves."
+};
+const RETURN_TXT = {
+  Saturn:{title:"Your Saturn return",body:"This is the famous \"grow up or get humbled\" moment that hits around ages 29 and 58. Life asks what's real. Cut what isn't working and commit to what is. Lots of people look back on this as the year their life really started."},
+  Jupiter:{title:"Your Jupiter return",body:"This happens about every 12 years and starts a brand new luck cycle. Plant seeds now. What you start this year can keep growing for the next twelve."}
+};
+
+/* ======================= HELPERS ======================= */
+const $ = s => document.querySelector(s);
+const norm = x => ((x % 360) + 360) % 360;
+const R = Math.PI / 180, DAY = 86400000;
+const signOf = lon => Math.floor(norm(lon) / 30);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sep = (a, b) => Math.abs(((a - b + 540) % 360) - 180); // 0..180
+const fmt = ms => new Date(ms).toLocaleDateString("en-US", {month:"short", day:"numeric", timeZone:"UTC"});
+const fmtY = ms => new Date(ms).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric", timeZone:"UTC"});
+
+function tzOffsetMs(ts, tz){
+  const p = new Intl.DateTimeFormat("en-US",{timeZone:tz,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}).formatToParts(new Date(ts));
+  const v = {}; p.forEach(x => v[x.type] = x.value);
+  return Date.UTC(+v.year, +v.month - 1, +v.day, +v.hour % 24, +v.minute, +v.second) - Math.floor(ts / 1000) * 1000;
+}
+function zonedToUtc(y, mo, d, h, mi, tz){
+  const wall = Date.UTC(y, mo - 1, d, h, mi); let guess = wall;
+  for (let i = 0; i < 4; i++){ const next = wall - tzOffsetMs(guess, tz); if (next === guess) break; guess = next; }
+  return new Date(guess);
+}
+function ascMc(time, lat, lon){
+  const T = time.tt / 36525, eps = (23.4392911 - 0.0130042 * T) * R;
+  const ramc = norm(Astronomy.SiderealTime(time) * 15 + lon) * R;
+  return {
+    asc: norm(Math.atan2(Math.cos(ramc), -(Math.sin(ramc) * Math.cos(eps) + Math.tan(lat * R) * Math.sin(eps))) / R),
+    mc: norm(Math.atan2(Math.sin(ramc), Math.cos(ramc) * Math.cos(eps)) / R)
+  };
+}
+function lonOf(body, t){
+  if (body === "Sun") return Astronomy.SunPosition(t).elon;
+  if (body === "Moon") return Astronomy.EclipticGeoMoon(t).lon;
+  return Astronomy.Ecliptic(Astronomy.GeoVector(body, t, true)).elon;
+}
+
+/* ======================= ENGINE ======================= */
+function castNatal({date, time, noTime, lat, lon, tz}){
+  const [y, mo, d] = date.split("-").map(Number);
+  const hasTime = !(noTime || !time);
+  const [h, mi] = hasTime ? time.split(":").map(Number) : [12, 0];
+  const t = Astronomy.MakeTime(zonedToUtc(y, mo, d, h, mi, tz));
+  const b = {};
+  ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn"].forEach(k => b[k] = lonOf(k, t));
+  let asc = null, mc = null;
+  if (hasTime){ ({asc, mc} = ascMc(t, lat, lon)); }
+  return {b, asc, mc, hasTime, lat, lon};
+}
+
+function forecast(natal, startMs){
+  const s0 = new Date(startMs);
+  const START = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth(), s0.getUTCDate(), 12);
+  const END = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + 12, 0, 12);
+  const N = Math.round((END - START) / DAY) + 1;
+  const dayMs = i => START + i * DAY;
+  const houseBase = natal.hasTime ? signOf(natal.asc) : signOf(natal.b.Sun);
+  const house = lon => ((signOf(lon) - houseBase + 12) % 12) + 1;
+
+  const points = [["Sun", natal.b.Sun], ["Moon", natal.b.Moon], ["Venus", natal.b.Venus], ["Mars", natal.b.Mars]];
+  if (natal.hasTime){ points.push(["Rising", natal.asc], ["Midheaven", natal.mc]); }
+
+  // 1. daily positions (plus one extra day for Mercury direction)
+  const BODIES = ["Sun","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune","Pluto"];
+  const pos = {}; BODIES.forEach(k => pos[k] = new Float64Array(N + 1));
+  for (let i = 0; i <= N; i++){ const t = Astronomy.MakeTime(new Date(dayMs(i))); BODIES.forEach(k => pos[k][i] = lonOf(k, t)); }
+
+  // 2. slow transits to natal points
+  const SLOW = [
+    {k:"Jupiter", orb:2, asps:[0,60,90,120,180], w:3},
+    {k:"Saturn",  orb:2, asps:[0,90,120,180],    w:4},
+    {k:"Uranus",  orb:1.5, asps:[0,90,120,180],  w:4},
+    {k:"Neptune", orb:1.5, asps:[0,90,120,180],  w:4},
+    {k:"Pluto",   orb:1.5, asps:[0,90,120,180],  w:5}];
+  const PW = {Sun:3, Moon:3, Rising:3, Midheaven:3, Venus:2, Mars:2};
+  const AW = {0:1.3, 180:1.1, 90:1.1, 120:.9, 60:.6};
+  function scan(tp, ptName, ptLon, asp, orb){
+    const runs = []; let cur = null;
+    for (let i = 0; i < N; i++){
+      const o = Math.abs(sep(pos[tp][i], ptLon) - asp);
+      if (o <= orb){ if (!cur){ cur = {s:i, e:i, best:i, bo:o}; } cur.e = i; if (o < cur.bo){ cur.bo = o; cur.best = i; } }
+      else if (cur){ runs.push(cur); cur = null; }
+    }
+    if (cur) runs.push(cur);
+    const merged = [];
+    runs.forEach(r => { const last = merged[merged.length - 1];
+      if (last && r.s - last.e <= 90){ last.e = r.e; last.passes++; if (r.bo < last.bo){ last.bo = r.bo; last.best = r.best; } }
+      else merged.push({...r, passes:1}); });
+    return merged.map(m => ({tp, pt:ptName, asp, s:m.s, e:m.e, exact:m.best, passes:m.passes, ongoingStart:m.s === 0, ongoingEnd:m.e === N - 1}));
+  }
+  let themes = [];
+  SLOW.forEach(sp => points.forEach(([pn, pl]) => sp.asps.forEach(a => scan(sp.k, pn, pl, a, sp.orb).forEach(w => { w.weight = sp.w * PW[pn] * AW[a]; themes.push(w); }))));
+  themes.sort((a, b) => b.weight - a.weight);
+  const seen = new Set(); themes = themes.filter(w => { const key = w.tp + w.pt; if (seen.has(key)) return false; seen.add(key); return true; });
+
+  const returns = [];
+  [["Saturn", natal.b.Saturn], ["Jupiter", natal.b.Jupiter]].forEach(([k, l]) => scan(k, k, l, 0, 2.5).forEach(w => returns.push(w)));
+
+  // 3. Mercury retrogrades
+  const rx = []; let r = null;
+  for (let i = 0; i < N; i++){
+    const back = ((pos.Mercury[i + 1] - pos.Mercury[i] + 540) % 360) - 180 < 0;
+    if (back && !r) r = {s:i, e:i, lon:pos.Mercury[i]};
+    if (back) r.e = i + 1;
+    if (!back && r){ rx.push(r); r = null; }
+  }
+  if (r){ r.ongoingEnd = true; rx.push(r); }
+  rx.forEach(x => { x.house = house(x.lon); x.sign = signOf(x.lon); x.ongoingStart = x.s === 0; x.e = Math.min(x.e, N - 1); });
+
+  // 4. eclipses
+  const ecl = [];
+  try {
+    let le = Astronomy.SearchLunarEclipse(new Date(START - 5 * DAY));
+    while (le.peak.date.getTime() < END + DAY){ if (le.peak.date.getTime() >= START - DAY / 2) ecl.push({type:"lunar", kind:le.kind, ms:le.peak.date.getTime(), lon:norm(Astronomy.SunPosition(le.peak).elon + 180)}); le = Astronomy.NextLunarEclipse(le.peak); }
+    let se = Astronomy.SearchGlobalSolarEclipse(new Date(START - 5 * DAY));
+    while (se.peak.date.getTime() < END + DAY){ if (se.peak.date.getTime() >= START - DAY / 2) ecl.push({type:"solar", kind:se.kind, ms:se.peak.date.getTime(), lon:Astronomy.SunPosition(se.peak).elon}); se = Astronomy.NextGlobalSolarEclipse(se.peak); }
+  } catch(e){}
+  ecl.sort((a, b) => a.ms - b.ms);
+  ecl.forEach(e => { e.house = house(e.lon); e.sign = signOf(e.lon); e.day = Math.round((Date.UTC(new Date(e.ms).getUTCFullYear(), new Date(e.ms).getUTCMonth(), new Date(e.ms).getUTCDate(), 12) - START) / DAY);
+    let hit = null, ho = 99; points.forEach(([pn, pl]) => { const o = sep(e.lon, pl); if (o <= 5 && o < ho){ ho = o; hit = pn; } }); e.hit = hit; });
+
+  // 5. daily go / lay-low scores
+  const GO = [{k:"Jupiter",orb:2,w:3,asps:[0,60,120]},{k:"Venus",orb:3,w:1.5,asps:[0,60,120]},{k:"Sun",orb:3,w:1,asps:[0,60,120]},{k:"Mars",orb:2,w:1,asps:[60,120]}];
+  const LOW = [{k:"Saturn",orb:2,w:3,asps:[0,90,180]},{k:"Mars",orb:2,w:1.5,asps:[0,90,180]},{k:"Pluto",orb:1.5,w:2,asps:[0,90,180]},{k:"Uranus",orb:1.5,w:1.5,asps:[90,180]},{k:"Neptune",orb:1.5,w:1.5,asps:[90,180]}];
+  const GPW = {Sun:1.2, Moon:.8, Venus:1, Mars:.6, Rising:1, Midheaven:1.2};
+  const LPW = {Sun:1.2, Moon:1, Venus:.8, Mars:.8, Rising:1, Midheaven:1};
+  const go = new Float64Array(N), low = new Float64Array(N), goWhy = [], lowWhy = [], jupOn = new Uint8Array(N);
+  const rxDay = new Uint8Array(N); rx.forEach(x => { for (let i = x.s; i <= x.e && i < N; i++) rxDay[i] = 1; });
+  const eclDay = new Int16Array(N).fill(-1); ecl.forEach((e, ei) => { for (let i = e.day - 4; i <= e.day + 4; i++) if (i >= 0 && i < N) eclDay[i] = ei; });
+  for (let i = 0; i < N; i++){
+    let bg = 0, bl = 0, wg = null, wl = null;
+    GO.forEach(g => points.forEach(([pn, pl]) => g.asps.forEach(a => { const o = Math.abs(sep(pos[g.k][i], pl) - a); if (o <= g.orb){ const c = g.w * GPW[pn] * (1 - o / g.orb); go[i] += c;
+      if (g.k === "Jupiter"){ jupOn[i] = 1; if (!wg && c > bg){ bg = c; wg = {tp:g.k, pt:pn, asp:a}; } }
+      else { const cc = c * 3; if (cc > bg || (wg && wg.tp === "Jupiter")){ bg = cc; wg = {tp:g.k, pt:pn, asp:a}; } } } })));
+    LOW.forEach(g => points.forEach(([pn, pl]) => g.asps.forEach(a => { const o = Math.abs(sep(pos[g.k][i], pl) - a); if (o <= g.orb){ const c = g.w * LPW[pn] * (1 - o / g.orb); low[i] += c; if (c > bl){ bl = c; wl = {tp:g.k, pt:pn, asp:a}; } } })));
+    if (rxDay[i]){ low[i] += 1.5; if (1.5 > bl){ bl = 1.5; wl = {tp:"Mercury"}; } }
+    if (eclDay[i] >= 0){ const ew = {penumbral:1.2, partial:2}[ecl[eclDay[i]].kind] || 2.5; low[i] += ew; if (ew > bl){ bl = ew; wl = {tp:"Eclipse"}; } }
+    goWhy.push(wg); lowWhy.push(wl);
+  }
+  const smooth = a => { const o = new Float64Array(N); for (let i = 0; i < N; i++){ let s = 0, c = 0; for (let j = i - 2; j <= i + 2; j++) if (j >= 0 && j < N){ s += a[j]; c++; } o[i] = s / c; } return o; };
+  const goS = smooth(go), lowS = smooth(low);
+  function pick(score, raw, why, count){
+    const idx = [...score.keys()].sort((a, b) => score[b] - score[a]); const chosen = [];
+    const key = w => w ? w.tp + (w.pt || "") + (w.asp ?? "") : "";
+    for (const i of idx){ if (score[i] <= 0.15 || chosen.length >= count) break;
+      if (why[i] && chosen.filter(c => key(c.why) === key(why[i])).length >= (why[i].tp === "Eclipse" ? 2 : 1)) continue;
+      if (chosen.every(c => Math.abs(c.peak - i) >= 21)){
+      let s = i, e = i; while (s > 0 && i - s < 4 && score[s - 1] >= score[i] * .6) s--; while (e < N - 1 && e - i < 4 && score[e + 1] >= score[i] * .6) e++;
+      let w = why[i], j = 0; while (!w && j < 6){ j++; w = why[i - j] || why[i + j]; }
+      if (w) chosen.push({peak:i, s, e, why:w, jup:jupOn[i] && w.tp !== "Jupiter"}); } }
+    return chosen.sort((a, b) => a.s - b.s);
+  }
+  const goWins = pick(goS, go, goWhy, 5);
+  const lowWins = pick(lowS, low, lowWhy, 3);
+
+  // 6. new moons
+  const newMoons = [];
+  try { let t = Astronomy.SearchMoonPhase(0, Astronomy.MakeTime(new Date(START - 3 * DAY)), 40);
+    while (t && t.date.getTime() < END + DAY){ newMoons.push({ms:t.date.getTime(), lon:Astronomy.SunPosition(t).elon}); t = Astronomy.SearchMoonPhase(0, t.AddDays(1), 40); } } catch(e){}
+
+  // 7. birthday (solar return)
+  let bday = null;
+  try { const sr = Astronomy.SearchSunLongitude(natal.b.Sun, Astronomy.MakeTime(new Date(START - DAY / 2)), 370);
+    if (sr && sr.date.getTime() <= END + DAY){ bday = {ms:sr.date.getTime()};
+      if (natal.hasTime){ const am = ascMc(sr, natal.lat, natal.lon); bday.house = ((signOf(natal.b.Sun) - signOf(am.asc) + 12) % 12) + 1; } } } catch(e){}
+
+  // 8. months
+  const months = [];
+  for (let k = 0; k < 12; k++){
+    const mS = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + k, 1, 12), mE = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + k + 1, 0, 12);
+    const iS = Math.max(0, Math.round((mS - START) / DAY)), iE = Math.min(N - 1, Math.round((mE - START) / DAY));
+    const nm = newMoons.find(n => n.ms >= mS - DAY / 2 && n.ms < mE + DAY / 2);
+    const h = nm ? house(nm.lon) : house(pos.Sun[Math.min(N - 1, Math.round((iS + iE) / 2))]);
+    const mid = (iS + iE) / 2, act = themes.filter(w => w.s <= iE && w.e >= iS);
+    const energy = act.sort((a, b) => (Math.abs(a.exact - mid) - a.weight * 4) - (Math.abs(b.exact - mid) - b.weight * 4))[0];
+    months.push({ms:mS, iS, iE, nm, house:h, energy});
+  }
+  return {START, END, N, dayMs, house, points, themes:themes.slice(0, 6), returns, rx, ecl, goWins, lowWins, goS, lowS, months, bday};
+}
+
+/* ======================= CITY SEARCH ======================= */
+let CITY_DB = null, CITY_LOADING = null;
+const countryName = (() => { let dn = null; try { dn = new Intl.DisplayNames(["en"], {type:"region"}); } catch(e){} return cc => { try { return dn ? dn.of(cc) : cc; } catch(e){ return cc; } }; })();
+const fold = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function loadCities(){
+  if (CITY_LOADING) return CITY_LOADING;
+  CITY_LOADING = fetch("cities.txt").then(r => { if (!r.ok) throw new Error(r.status); return r.text(); }).then(t => {
+    const nl = t.indexOf("\n"), zones = t.slice(0, nl).split(",");
+    CITY_DB = t.slice(nl + 1).split("\n").map(l => { const p = l.split("|"); return {n:p[0], c:p[1], a:p[2], lat:+p[3], lon:+p[4], tz:zones[+p[5]], k:fold(p[0])}; });
+    return CITY_DB;
+  }).catch(e => { CITY_LOADING = null; throw e; });
+  return CITY_LOADING;
+}
+const cityLabel = c => [c.n, c.a, c.c === "US" ? "USA" : countryName(c.c)].filter(Boolean).join(", ");
+function searchCities(q){
+  if (!CITY_DB) return [];
+  const parts = q.split(",").map(fold).filter(Boolean); if (!parts.length) return [];
+  const head = parts[0], rest = parts.slice(1).join(" "), out = [];
+  const okRest = c => !rest || fold(c.a + " " + c.c + " " + countryName(c.c)).includes(rest) || (c.c === "US" && "usa united states".includes(rest));
+  for (const c of CITY_DB){ if (c.k === head && okRest(c)){ out.push(c); if (out.length >= 8) return out; } }
+  for (const c of CITY_DB){ if (c.k !== head && c.k.startsWith(head) && okRest(c)){ out.push(c); if (out.length >= 8) break; } }
+  return out;
+}
+
+/* ======================= MONEY DATA ======================= */
+const ACTIONS = [
+  {k:"raise",    t:"Ask for a raise or charge more", ic:"↑", c:"var(--amber)", skip:"Skip asking during Mercury retrograde and eclipse weeks."},
+  {k:"launch",   t:"Launch or start something new",   ic:"✦", c:"var(--cyan)",  skip:"Never launch during Mercury retrograde. Redo old things then instead."},
+  {k:"contract", t:"Sign contracts and deals",         ic:"✎", c:"var(--violet)",skip:"Avoid signing within a few days of Mercury turning, and during eclipse weeks."},
+  {k:"purchase", t:"Make a big purchase",              ic:"◆", c:"var(--pink)",  skip:"Skip big buys during Venus or Mercury retrograde."},
+  {k:"debt",     t:"Pay down debt and cut costs",      ic:"✂", c:"var(--coral)", skip:"Waning moon days are best for cutting. Skip new loans in eclipse weeks."}
+];
+const MONEY_HOUSES = [2, 10, 8, 6, 11, 5];
+const ZONE_NAME = {2:"Your money zone", 10:"Your career zone", 8:"Your shared money zone", 6:"Your daily work zone", 11:"Your network zone", 5:"Your side hustle zone"};
+const ZONE_WHAT = {2:"income and what you charge", 10:"career, raises, and reputation", 8:"debt, loans, investments, and shared accounts", 6:"daily work and clients", 11:"collabs, networks, and online income", 5:"creative projects and side hustles"};
+const ZONE_TXT = {
+ Jupiter:{2:"Income can grow this year. Ask for more and charge what you're worth.",10:"Career luck. Raises, promotions, and big-name clients are on the table.",8:"Help with money shows up: loans, payouts, investments, or a partner's income.",6:"More work comes in, and the work gets better.",11:"Money through people. Say yes to collabs and networking.",5:"Lucky with creative projects and side hustles. Go easy on gambling."},
+ Saturn:{2:"Tighten up. Build a budget you'll actually use. Slow money, but it sticks.",10:"Hard work at your job pays off, slowly. More responsibility, more respect.",8:"Get serious about debt, taxes, and shared accounts. Clean it up now.",6:"Heavy workload. Build systems so the work doesn't run you.",11:"Fewer, better partnerships. Long-term money goals get real.",5:"Treat the side hustle like a real business. Fewer risky bets."},
+ Uranus:{2:"Income can change fast. New ways to earn show up out of nowhere.",10:"A sudden career change or a brand new kind of job.",8:"Shared money shifts fast. Check your accounts and agreements.",6:"Your work routine changes a lot. Freelance or remote work may call.",11:"Income from tech, online, or group projects.",5:"Wild ideas can pay off. Bet small."},
+ Neptune:{2:"Money can feel foggy. Track every dollar.",10:"Your dream career gets clearer. Double-check every offer.",8:"Read the fine print on loans and shared money.",6:"Burnout risk. Protect your energy at work.",11:"Watch out for too-good-to-be-true group deals.",5:"Creative work can pay. Skip risky bets."},
+ Pluto:{2:"A total rebuild of how you earn and what you value.",10:"Career power moves. You step into control.",8:"Big changes in debt, investments, or inheritance.",6:"You transform how you work. Old jobs fall away.",11:"Powerful new networks bring money.",5:"Creative projects can turn into real money."}
+};
+const SHUT_TXT = {
+  Mercury:"Mercury retrograde. Contracts, launches, and new tech purchases are more likely to go sideways. Double-check every payment.",
+  Venus:"Venus retrograde. Big purchases and new money deals tend to disappoint. Revisit old ones instead.",
+  Eclipse:"Eclipse week. Money surprises happen. Hold off on big moves until it passes.",
+  Saturn:"Money feels tight and slow. Pay bills, skip big spending.",
+  Mars:"Impulse-spending week. Sleep on every purchase.",
+  Pluto:"Money power struggles. Don't sign under pressure.",
+  Uranus:"Surprise expenses are likely. Keep a cushion.",
+  Neptune:"Foggy money week. Read the fine print twice."
+};
+
+/* ======================= MONEY ENGINE ======================= */
+function moneyForecast(natal, startMs){
+  const s0 = new Date(startMs);
+  const START = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth(), s0.getUTCDate(), 12);
+  const END = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + 12, 0, 12);
+  const N = Math.round((END - START) / DAY) + 1;
+  const dayMs = i => START + i * DAY;
+  const houseBase = natal.hasTime ? signOf(natal.asc) : signOf(natal.b.Sun);
+  const house = lon => ((signOf(lon) - houseBase + 12) % 12) + 1;
+  const P = {Sun:natal.b.Sun, Moon:natal.b.Moon, Mercury:natal.b.Mercury, Venus:natal.b.Venus, Jupiter:natal.b.Jupiter, Saturn:natal.b.Saturn};
+  if (natal.hasTime){ P.Midheaven = natal.mc; P.Rising = natal.asc; }
+  const PN = {Sun:"Sun", Moon:"Moon", Mercury:"Mercury", Venus:"Venus", Jupiter:"Jupiter", Saturn:"Saturn", Midheaven:"Midheaven", Rising:"Rising sign"};
+
+  const BODIES = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune","Pluto"];
+  const pos = {}; BODIES.forEach(k => pos[k] = new Float64Array(N + 1));
+  for (let i = 0; i <= N; i++){ const t = Astronomy.MakeTime(new Date(dayMs(i))); BODIES.forEach(k => pos[k][i] = lonOf(k, t)); }
+
+  // retrogrades
+  function rxPeriods(k){
+    const out = []; let r = null;
+    for (let i = 0; i < N; i++){
+      const back = ((pos[k][i + 1] - pos[k][i] + 540) % 360) - 180 < 0;
+      if (back && !r) r = {k, s:i, e:i, lon:pos[k][i], ongoingStart:i === 0};
+      if (back) r.e = Math.min(N - 1, i + 1);
+      if (!back && r){ out.push(r); r = null; }
+    }
+    if (r){ r.ongoingEnd = true; out.push(r); }
+    return out;
+  }
+  const rx = [...rxPeriods("Mercury"), ...rxPeriods("Venus")];
+  const mRx = new Uint8Array(N), vRx = new Uint8Array(N), mStation = new Uint8Array(N);
+  rx.forEach(r => { for (let i = r.s; i <= r.e; i++){ if (r.k === "Mercury") mRx[i] = 1; else vRx[i] = 1; }
+    if (r.k === "Mercury") [r.s, r.e].forEach(st => { for (let j = st - 3; j <= st + 3; j++) if (j >= 0 && j < N) mStation[j] = 1; }); });
+
+  // eclipses
+  const ecl = [];
+  try {
+    let le = Astronomy.SearchLunarEclipse(new Date(START - 5 * DAY));
+    while (le.peak.date.getTime() < END + DAY){ if (le.peak.date.getTime() >= START - DAY / 2) ecl.push({type:"lunar", kind:le.kind, ms:le.peak.date.getTime(), lon:norm(Astronomy.SunPosition(le.peak).elon + 180)}); le = Astronomy.NextLunarEclipse(le.peak); }
+    let se = Astronomy.SearchGlobalSolarEclipse(new Date(START - 5 * DAY));
+    while (se.peak.date.getTime() < END + DAY){ if (se.peak.date.getTime() >= START - DAY / 2) ecl.push({type:"solar", kind:se.kind, ms:se.peak.date.getTime(), lon:Astronomy.SunPosition(se.peak).elon}); se = Astronomy.NextGlobalSolarEclipse(se.peak); }
+  } catch(e){}
+  ecl.sort((a, b) => a.ms - b.ms);
+  const eDay = new Uint8Array(N);
+  ecl.forEach(e => { const d = new Date(e.ms); e.day = Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12) - START) / DAY); e.house = house(e.lon); e.sign = signOf(e.lon);
+    for (let j = e.day - 3; j <= e.day + 3; j++) if (j >= 0 && j < N) eDay[j] = 1; });
+
+  // new moons
+  const nmHouse = new Int8Array(N).fill(0);
+  try { let t = Astronomy.SearchMoonPhase(0, Astronomy.MakeTime(new Date(START - 4 * DAY)), 40);
+    while (t && t.date.getTime() < END + DAY){ const d = new Date(t.date.getTime()); const di = Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12) - START) / DAY);
+      const h = house(Astronomy.SunPosition(t).elon); for (let j = di; j <= di + 3; j++) if (j >= 0 && j < N) nmHouse[j] = h; t = Astronomy.SearchMoonPhase(0, t.AddDays(1), 40); } } catch(e){}
+
+  const harmAsp = [0, 60, 120], softOnly = [60, 120], hardAsp = [0, 90, 180];
+  const fit = (tp, i, np, asps, orb) => { let best = 0, ba = null; asps.forEach(a => { const o = Math.abs(sep(pos[tp][i], P[np]) - a); if (o <= orb){ const c = 1 - o / orb; if (c > best){ best = c; ba = a; } } }); return [best, ba]; };
+
+  const score = {}, why = {}; ACTIONS.forEach(a => { score[a.k] = new Float64Array(N); why[a.k] = []; });
+  const shut = new Float64Array(N), shutWhy = [];
+  for (let i = 0; i < N; i++){
+    const waxing = norm(pos.Moon[i] - pos.Sun[i]) < 180;
+    const add = (k, v, label) => { score[k][i] += v; if (label && (!why[k][i] || v > why[k][i].v)) why[k][i] = {v, label}; };
+    const tryAsp = (k, tp, nps, asps, orb, w) => nps.forEach(np => { if (P[np] === undefined) return; const [c, a] = fit(tp, i, np, asps, orb); if (c > 0) add(k, w * c, `${tp === "Sun" ? "The Sun" : tp} ${ASP[a].n} your ${PN[np]}`); });
+
+    // raise
+    tryAsp("raise", "Jupiter", ["Midheaven","Sun","Jupiter"], harmAsp, 2, 3);
+    tryAsp("raise", "Venus", ["Midheaven","Sun","Jupiter"], harmAsp, 3, 1.5);
+    tryAsp("raise", "Sun", ["Midheaven","Sun","Jupiter"], harmAsp, 3, 1.2);
+    tryAsp("raise", "Mercury", ["Midheaven","Sun"], harmAsp, 3, 1);
+    if (house(pos.Sun[i]) === 10) add("raise", 1, "The Sun lights up your career zone");
+    if (house(pos.Venus[i]) === 10) add("raise", .8, "Venus is in your career zone");
+    if (waxing) add("raise", .4);
+    // launch
+    if (nmHouse[i]) add("launch", [1,2,10].includes(nmHouse[i]) ? 3 : 1.5, {1:"New moon in your fresh-start zone",2:"New moon in your money zone",10:"New moon in your career zone"}[nmHouse[i]] || `New moon, a fresh start for your ${HOUSE[nmHouse[i]]}`);
+    tryAsp("launch", "Jupiter", ["Sun","Midheaven","Rising"], harmAsp, 2, 2.5);
+    tryAsp("launch", "Sun", ["Sun","Midheaven","Rising"], harmAsp, 3, 1);
+    tryAsp("launch", "Mars", ["Sun","Midheaven","Rising"], softOnly, 2, 1);
+    if (waxing) add("launch", .8);
+    // contracts
+    tryAsp("contract", "Mercury", ["Sun","Mercury","Venus","Jupiter"], harmAsp, 3, 1.5);
+    tryAsp("contract", "Jupiter", ["Mercury"], harmAsp, 2, 2);
+    tryAsp("contract", "Venus", ["Mercury"], harmAsp, 3, 1);
+    if (waxing) add("contract", .4);
+    // purchase
+    tryAsp("purchase", "Venus", ["Venus","Jupiter","Moon"], harmAsp, 3, 1.5);
+    tryAsp("purchase", "Jupiter", ["Venus","Moon"], harmAsp, 2, 2);
+    if (waxing) add("purchase", .4);
+    // debt
+    if (!waxing) add("debt", 1.2);
+    tryAsp("debt", "Saturn", ["Venus","Sun","Jupiter"], softOnly, 2, 2);
+    tryAsp("debt", "Pluto", ["Venus","Jupiter"], softOnly, 1.5, 1);
+    if (house(pos.Sun[i]) === 8) add("debt", .8, "The Sun is in your shared money zone");
+    if (!why.debt[i] && !waxing) why.debt[i] = {v:1.2, label:"Waning moon, the best phase for cutting back"};
+
+    // blockers
+    let bw = 0, bl = null; const block = (v, label, extra) => { shut[i] += v; if (v > bw){ bw = v; bl = extra ? {k:label, ...extra} : {k:label}; } };
+    if (mRx[i]) block(2, "Mercury");
+    if (vRx[i]) block(2, "Venus");
+    if (eDay[i]) block(3, "Eclipse");
+    [["Saturn",2,2,["Venus","Jupiter","Sun","Midheaven"]],["Mars",2,1.2,["Venus","Jupiter"]],["Pluto",1.5,1.5,["Venus","Jupiter"]],["Uranus",1.5,1.5,["Venus","Jupiter"]],["Neptune",1.5,1.2,["Venus"]]].forEach(([tp, orb, w, nps]) => nps.forEach(np => { if (P[np] === undefined) return; const [c, a] = fit(tp, i, np, hardAsp, orb); if (c > 0) block(w * c, tp, {np, a}); }));
+    shutWhy.push(bl);
+    // penalties
+    if (mRx[i]){ score.raise[i] -= 2.5; score.launch[i] -= 6; score.contract[i] -= 6; score.purchase[i] -= 2.5; }
+    if (mStation[i]){ score.contract[i] -= 2; score.launch[i] -= 1.5; }
+    if (vRx[i]){ score.purchase[i] -= 6; score.raise[i] -= 1.5; }
+    if (eDay[i]){ ACTIONS.forEach(a => score[a.k][i] -= 3); }
+  }
+
+  // best dates per action
+  const best = {};
+  ACTIONS.forEach(a => {
+    const sc = score[a.k], idx = [...sc.keys()].sort((x, y) => sc[y] - sc[x]), out = [];
+    for (const i of idx){ if (out.length >= 3 || sc[i] < .9) break; if (!why[a.k][i]) continue; if (out.every(o => Math.abs(o.i - i) >= 20)){
+      let s = i, e = i; while (s > 0 && i - s < 2 && sc[s - 1] >= sc[i] * .85) s--; while (e < N - 1 && e - i < 2 && sc[e + 1] >= sc[i] * .85) e++;
+      out.push({i, s, e, why:why[a.k][i].label}); } }
+    best[a.k] = out.sort((x, y) => x.i - y.i);
+  });
+
+  // wallet-shut windows
+  const shutWins = [];
+  rx.forEach(r => shutWins.push({s:r.s, e:r.e, k:r.k, label:`${r.k} retrograde in ${SIGNS[signOf(r.lon)].n}`, ongoingStart:r.ongoingStart, ongoingEnd:r.ongoingEnd}));
+  ecl.forEach(e => { if (e.day >= 0 && e.day < N) shutWins.push({s:Math.max(0, e.day - 3), e:Math.min(N - 1, e.day + 3), k:"Eclipse", label:`${e.type === "solar" ? "Solar" : "Lunar"} eclipse, ${fmt(e.ms)}`, note:ZONE_NAME[e.house] ? `It lands in ${ZONE_NAME[e.house].toLowerCase()}, so expect money news.` : `It lands in the part of your chart about ${HOUSE[e.house]}.`}); });
+  // strongest personal hard hits not already covered
+  const hard = [...shut.keys()].filter(i => !mRx[i] && !vRx[i] && !eDay[i] && shut[i] >= 1.2).sort((x, y) => shut[y] - shut[x]);
+  const hits = [];
+  for (const i of hard){ if (hits.length >= 3) break; if (hits.every(h => Math.abs(h.i - i) >= 25)){ let s = i, e = i; while (s > 0 && i - s < 3 && shut[s - 1] >= 1) s--; while (e < N - 1 && e - i < 3 && shut[e + 1] >= 1) e++; const w = shutWhy[i] || {k:"Saturn"}; hits.push({i, s, e, k:w.k, label:w.np ? `${w.k} ${ASP[w.a].n} your ${PN[w.np]}` : "Personal money squeeze"}); } }
+  hits.forEach(h => shutWins.push(h));
+  shutWins.sort((x, y) => x.s - y.s);
+
+  // money zones (slow planets in money houses)
+  const zones = [];
+  ["Jupiter","Saturn","Uranus","Neptune","Pluto"].forEach(k => {
+    let cur = null;
+    for (let i = 0; i < N; i++){ const h = house(pos[k][i]);
+      if (!cur || cur.h !== h){ if (cur) zones.push(cur); cur = {k, h, s:i, e:i}; } else cur.e = i; }
+    if (cur) zones.push(cur);
+  });
+  const moneyZones = zones.filter(z => MONEY_HOUSES.includes(z.h) && z.e - z.s >= 10).map(z => ({...z, ongoingStart:z.s === 0, ongoingEnd:z.e === N - 1}))
+    .sort((a, b) => MONEY_HOUSES.indexOf(a.h) - MONEY_HOUSES.indexOf(b.h) || a.s - b.s);
+
+  // headline
+  const PWT = {Jupiter:1.15, Saturn:.9, Pluto:.8, Uranus:.8, Neptune:.6}, HWT = {2:1, 10:.95, 8:.8, 11:.7, 6:.6, 5:.6};
+  const hscore = z => PWT[z.k] * HWT[z.h] * ((z.e - z.s + 1) / N);
+  const headline = moneyZones.slice().sort((a, b) => hscore(b) - hscore(a))[0] || null;
+
+  // months
+  const months = [];
+  for (let k = 0; k < 12; k++){
+    const mS = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + k, 1, 12), mE = Date.UTC(s0.getUTCFullYear(), s0.getUTCMonth() + k + 1, 0, 12);
+    const iS = Math.max(0, Math.round((mS - START) / DAY)), iE = Math.min(N - 1, Math.round((mE - START) / DAY));
+    let pos = 0, neg = 0, bi = -1, bv = -99, ba = null, shutDays = 0;
+    for (let i = iS; i <= iE; i++){
+      let m = -99, mk = null; ACTIONS.forEach(a => { if (score[a.k][i] > m){ m = score[a.k][i]; mk = a.k; } });
+      pos += Math.max(0, m); neg += shut[i]; if (shut[i] >= 2) shutDays++;
+      if (shut[i] < 1.5 && m > bv && why[mk][i]){ bv = m; bi = i; ba = mk; }
+    }
+    const n = iE - iS + 1;
+    months.push({ms:mS, iS, iE, net:pos / n - neg / n, best:bi >= 0 ? {i:bi, k:ba, why:why[ba][bi].label} : null, shutDays});
+  }
+  const order = months.map((m, i) => i).sort((a, b) => months[b].net - months[a].net);
+  order.forEach((mi, r) => months[mi].rating = r < 4 ? "Strong" : r >= 9 ? "Careful" : "Steady");
+
+  return {START, END, N, dayMs, best, shutWins, moneyZones, headline, months, rx, ecl};
+}
+
+/* ======================= RENDER ======================= */
+const rangeTxt = (f, w) => {
+  if (w.ongoingStart && w.ongoingEnd) return "All year";
+  const a = w.ongoingStart ? "Now" : fmt(f.dayMs(w.s)), b = fmt(f.dayMs(w.e)) + (w.ongoingEnd ? " and beyond" : "");
+  return w.s === w.e ? a : `${a} to ${b}`;
+};
+const dayTxt = (f, d) => d.s === d.e ? fmt(f.dayMs(d.i)) : `${fmt(f.dayMs(d.s))} to ${fmt(f.dayMs(d.e)).split(" ")[0] === fmt(f.dayMs(d.s)).split(" ")[0] ? fmt(f.dayMs(d.e)).split(" ")[1] : fmt(f.dayMs(d.e))}`;
+
+function render(input, isExample){
+  const natal = castNatal(input);
+  const f = moneyForecast(natal, Date.now());
+  const name = input.name || "";
+  const who = name ? esc(name) + "'s" : "Your";
+  const A = Object.fromEntries(ACTIONS.map(a => [a.k, a]));
+
+  const head = f.headline ? `<section class="panel headline">
+      <div class="gl" style="color:${PLANET_COLOR[f.headline.k]}">${GLYPH[f.headline.k]}${VS}</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><div class="eyebrow" style="color:var(--amber)">Your money headline · ${rangeTxt(f, f.headline)}</div>
+      <h2>${f.headline.k} in ${ZONE_NAME[f.headline.h].toLowerCase()}</h2><p class="muted">${ZONE_TXT[f.headline.k][f.headline.h]}</p></div></section>`
+    : `<section class="panel headline"><div class="gl" style="color:var(--amber)">◆</div><div style="display:flex;flex-direction:column;gap:6px"><div class="eyebrow" style="color:var(--amber)">Your money headline</div><h2>A steady money year</h2><p class="muted">No slow planets camp out in your money zones this year, so your best dates below do the heavy lifting. Use them on purpose.</p></div></section>`;
+
+  const actions = ACTIONS.map(a => `<article class="act" style="--ac:${a.c}">
+      <div class="acthead"><span class="ic">${a.ic}</span><h3>${a.t}</h3></div>
+      ${f.best[a.k].length ? `<ol>${f.best[a.k].map(d => `<li><span class="d">${dayTxt(f, d)}</span><span>${d.why}.</span></li>`).join("")}</ol>` : `<p class="muted">No standout dates for this one this year. Use your strong months below.</p>`}
+      <p class="skip">${a.skip}</p></article>`).join("");
+
+  const shut = f.shutWins.map(w => `<div class="item shut"><div class="d">${rangeTxt(f, w)}</div><h3>${w.label}</h3><p>${w.note ? w.note + " " : ""}${SHUT_TXT[w.k] || SHUT_TXT.Saturn}</p></div>`).join("");
+
+  const zones = f.moneyZones.length ? f.moneyZones.map(z => `<div class="zone"><div class="zl"><span class="gl" style="color:${PLANET_COLOR[z.k]}">${GLYPH[z.k]}${VS}</span><div><div class="d">${rangeTxt(f, z)}</div><h3>${z.k} in ${ZONE_NAME[z.h].toLowerCase()}</h3><div class="muted" style="font-size:13px">${ZONE_WHAT[z.h]}</div></div></div><p>${ZONE_TXT[z.k][z.h]}</p></div>`).join("")
+    : `<p class="muted">No slow planets in your money zones this year. Your money moves come from the shorter windows above.</p>`;
+
+  const months = f.months.map(m => `<article class="mcard r-${m.rating.toLowerCase()}">
+      <div class="mtop"><span class="mname">${new Date(m.ms).toLocaleDateString("en-US", {month:"long", year:"numeric", timeZone:"UTC"})}</span><span class="rating">${m.rating}</span></div>
+      ${m.best ? `<p><b>Best money day: ${fmt(f.dayMs(m.best.i))}.</b> Good for: ${A[m.best.k].t.toLowerCase()}. ${m.best.why}.</p>` : `<p><b>No standout day.</b> Keep it simple this month.</p>`}
+      ${m.shutDays ? `<p class="muted" style="font-size:13px">${m.shutDays} wallet-shut day${m.shutDays === 1 ? "" : "s"} this month.</p>` : ""}
+    </article>`).join("");
+
+  $("#results").innerHTML = `
+    <section class="sec">
+      ${isExample ? `<span class="example">Example money dates · enter your details above</span>` : ""}
+      <div class="sechead"><div class="eyebrow" style="color:var(--amber)">${who} money dates</div><h2>${fmtY(f.START)} <span class="muted">to</span> ${fmtY(f.END)}</h2></div>
+      ${natal.hasTime ? "" : `<p class="notime">No birth time, so money zones are based on your Sun sign and career-point dates are skipped. Everything else is exact.</p>`}
+    </section>
+    ${head}
+    <section class="sec">
+      <div class="sechead"><div class="eyebrow">Your best dates</div><h2>When to make each money move</h2><p class="muted">Your top dates for the five money moves that matter most, picked from every day of your next 12 months.</p></div>
+      <div class="acts">${actions}</div>
+    </section>
+    <section class="sec">
+      <div class="sechead"><div class="eyebrow" style="color:var(--pink)">Wallet-shut dates</div><h2>When to keep your money still</h2><p class="muted">Pay your bills like normal. Just hold off on new deals, big buys, and launches.</p></div>
+      <div class="list">${shut}</div>
+    </section>
+    <section class="sec">
+      <div class="sechead"><div class="eyebrow">Your money zones</div><h2>Where the big planets sit in your money life</h2><p class="muted">The slow planets parked in the parts of your chart that rule income, career, and debt. These set the tone for your whole money year.</p></div>
+      <div class="zones">${zones}</div>
+    </section>
+    <section class="sec">
+      <div class="sechead"><div class="eyebrow">Month by month</div><h2>Your money year at a glance</h2><p class="muted">Each month is rated against your other months, so you can see where to push and where to coast.</p></div>
+      <div class="months">${months}</div>
+    </section>`;
+}
+
+/* ======================= FORM ======================= */
+let PICKED = null, MANUAL = false;
+function setupCitySearch(){
+  const inp = $("#fCity"), list = $("#cityList"); let hits = [], active = -1, timer = null;
+  const close = () => { list.hidden = true; inp.setAttribute("aria-expanded", "false"); active = -1; };
+  const paint = () => {
+    list.innerHTML = hits.length ? hits.map((c, i) => `<li role="option" id="city-${i}" data-i="${i}" aria-selected="${i === active}"><span>${esc(cityLabel(c))}</span><small>${c.lat.toFixed(1)}, ${c.lon.toFixed(1)}</small></li>`).join("")
+      : `<li class="empty">No match yet. Try the nearest bigger town, or tap "Enter coordinates instead."</li>`;
+    list.hidden = false; inp.setAttribute("aria-expanded", "true");
+    if (active >= 0) inp.setAttribute("aria-activedescendant", "city-" + active); else inp.removeAttribute("aria-activedescendant");
+  };
+  const pickCity = i => { PICKED = hits[i]; inp.value = cityLabel(PICKED); close(); $("#formErr").textContent = ""; };
+  const run = async () => {
+    const q = inp.value.trim(); PICKED = null;
+    if (q.length < 2){ close(); return; }
+    if (!CITY_DB){ list.innerHTML = `<li class="empty">Loading every city on Earth…</li>`; list.hidden = false;
+      try { await loadCities(); } catch(e){ list.innerHTML = `<li class="empty">The city list didn't load. Refresh the page, or tap "Enter coordinates instead."</li>`; return; } }
+    if (inp.value.trim() !== q) return;
+    hits = searchCities(q); active = hits.length ? 0 : -1; paint();
+  };
+  inp.addEventListener("focus", () => { loadCities().catch(() => {}); });
+  inp.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 120); });
+  inp.addEventListener("keydown", e => {
+    if (list.hidden || !hits.length) return;
+    if (e.key === "ArrowDown"){ e.preventDefault(); active = (active + 1) % hits.length; paint(); }
+    else if (e.key === "ArrowUp"){ e.preventDefault(); active = (active - 1 + hits.length) % hits.length; paint(); }
+    else if (e.key === "Enter" && active >= 0){ e.preventDefault(); pickCity(active); }
+    else if (e.key === "Escape") close();
+  });
+  list.addEventListener("mousedown", e => { const li = e.target.closest("li[data-i]"); if (li){ e.preventDefault(); pickCity(+li.dataset.i); } });
+  inp.addEventListener("blur", () => setTimeout(close, 150));
+  $("#manualToggle").onclick = () => {
+    MANUAL = !MANUAL; ["#otherLat","#otherLon","#otherTz"].forEach(id => $(id).hidden = !MANUAL);
+    inp.disabled = MANUAL; $("#manualToggle").textContent = MANUAL ? "Search for my city instead" : "Enter coordinates instead";
+  };
+}
+function setupForm(){
+  setupCitySearch();
+  let zones = []; try { zones = Intl.supportedValuesOf("timeZone"); } catch(e){ zones = ["UTC"]; }
+  $("#fTz").innerHTML = zones.map(z => `<option>${z}</option>`).join("");
+  try { $("#fTz").value = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e){}
+  $("#fNoTime").onchange = e => { $("#fTime").disabled = e.target.checked; };
+  $("#birthForm").onsubmit = ev => {
+    ev.preventDefault(); const err = $("#formErr"); err.textContent = "";
+    const date = $("#fDate").value, time = $("#fTime").value, noTime = $("#fNoTime").checked;
+    if (!date){ err.textContent = "Add your birth date."; return; }
+    const y = +date.slice(0, 4); if (y < 1900 || y > 2100){ err.textContent = "Use a birth year between 1900 and 2100."; return; }
+    if (!noTime && !time){ err.textContent = "Add your birth time, or tick \"I don't know my birth time.\""; return; }
+    let lat, lon, tz;
+    if (MANUAL){
+      lat = parseFloat($("#fLat").value); lon = parseFloat($("#fLon").value); tz = $("#fTz").value;
+      if (!(lat >= -66 && lat <= 66) || !(lon >= -180 && lon <= 180)){ err.textContent = "Add a latitude between -66 and 66 and a longitude between -180 and 180. Search your city + \"coordinates\" to find them."; return; }
+    } else if (PICKED){ lat = PICKED.lat; lon = PICKED.lon; tz = PICKED.tz; }
+    else { err.textContent = "Start typing your birth city and tap it in the list."; return; }
+    const btn = $("#goBtn"); btn.disabled = true; btn.textContent = "Mapping your money dates…";
+    setTimeout(() => {
+      try { render({name:$("#fName").value.trim(), date, time, noTime, lat, lon, tz}, false);
+        $("#results").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"}); }
+      catch(e){ err.textContent = "Something went wrong mapping that chart. Check the date and city and try again."; }
+      btn.disabled = false; btn.textContent = "Map my money dates";
+    }, 30);
+  };
+}
+
+/* ======================= SKY + BOOT ======================= */
+function sky(){
+  const cv = $("#sky"), x = cv.getContext("2d"); let stars = [];
+  const size = () => { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
+    stars = Array.from({length: Math.round(innerWidth * innerHeight / 5000)}, () => ({x:Math.random() * cv.width, y:Math.random() * cv.height, r:(Math.random() * 1.2 + .3) * devicePixelRatio, p:Math.random() * 6.28})); };
+  size(); addEventListener("resize", size);
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const frame = t => { x.clearRect(0, 0, cv.width, cv.height);
+    stars.forEach(s => { x.globalAlpha = still ? .6 : .35 + .45 * Math.abs(Math.sin(t / 1600 + s.p)); x.fillStyle = "#F4F1FF"; x.beginPath(); x.arc(s.x, s.y, s.r, 0, 6.28); x.fill(); });
+    if (!still) requestAnimationFrame(frame); };
+  requestAnimationFrame(frame);
+}
+$("#todayTag").textContent = new Date().toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"}).toUpperCase();
+sky(); setupForm();
+function boot(){
+  if (typeof Astronomy === "undefined"){ $("#results").innerHTML = `<p class="err">The star data didn't load. Check your connection and refresh the page.</p>`; return; }
+  render({name:"Maya", date:"1995-03-14", time:"08:30", noTime:false, lat:30.27, lon:-97.74, tz:"America/Chicago"}, true);
+}
+if (document.readyState === "complete") boot(); else addEventListener("load", boot);
+</script>
